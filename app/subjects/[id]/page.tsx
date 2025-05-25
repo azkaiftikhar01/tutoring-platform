@@ -9,14 +9,23 @@ import { DatePicker } from "@/components/date-picker"
 import { format } from "date-fns"
 import { Clock, MapPin, Wifi } from "lucide-react"
 
+type Teacher = {
+  id: string
+  name: string
+  phone: string
+  experience: string
+}
+
 type Subject = {
   id: string
   name: string
   description: string | null
-  price: number
+  price: number | null
+  currency: string | null
   sessionMode: string[]
   location: string | null
   schedules: Schedule[]
+  teachers: Teacher[]
 }
 
 type Schedule = {
@@ -145,7 +154,13 @@ export default function SubjectDetailsPage({ params }: { params: { id: string } 
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Price</h3>
-                <p className="text-lg">${subject.price.toFixed(2)} per session</p>
+                <p className="text-lg">
+                  {subject.price != null && subject.currency
+                    ? `${subject.price} ${subject.currency}`
+                    : subject.price != null
+                      ? `${subject.price}`
+                      : "Not specified"}
+                </p>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Session Types</h3>
@@ -163,6 +178,22 @@ export default function SubjectDetailsPage({ params }: { params: { id: string } 
                     </div>
                   )}
                 </div>
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Teachers</h3>
+                {subject.teachers && subject.teachers.length > 0 ? (
+                  <ul className="space-y-2">
+                    {subject.teachers.map((teacher) => (
+                      <li key={teacher.id} className="border rounded p-2">
+                        <div><span className="font-semibold">Name:</span> {teacher.name}</div>
+                        <div><span className="font-semibold">Phone:</span> {teacher.phone}</div>
+                        <div><span className="font-semibold">Experience:</span> {teacher.experience}</div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>No teachers listed for this subject.</p>
+                )}
               </div>
             </CardContent>
           </Card>

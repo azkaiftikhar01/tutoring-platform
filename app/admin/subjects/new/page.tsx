@@ -19,6 +19,31 @@ export default function NewSubject() {
     ONLINE: false,
     IN_HOUSE: false,
   })
+  const [teachers, setTeachers] = useState<{
+    name: string;
+    phone: string;
+    experience: string;
+    [key: string]: string;
+  }[]>([
+    { name: "", phone: "", experience: "" },
+  ])
+  const [currency, setCurrency] = useState("")
+
+  const handleTeacherChange = (index: number, field: string, value: string) => {
+    setTeachers((prev) => {
+      const updated = [...prev]
+      updated[index][field] = value
+      return updated
+    })
+  }
+
+  const addTeacher = () => {
+    setTeachers((prev) => [...prev, { name: "", phone: "", experience: "" }])
+  }
+
+  const removeTeacher = (index: number) => {
+    setTeachers((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -28,7 +53,8 @@ export default function NewSubject() {
     const formData = new FormData(e.currentTarget)
     const name = formData.get("name") as string
     const description = formData.get("description") as string
-    const price = Number.parseFloat(formData.get("price") as string)
+    const priceValue = formData.get("price") as string
+    const price = priceValue ? Number.parseFloat(priceValue) : undefined
     const location = formData.get("location") as string
 
     // Get selected session modes
@@ -42,6 +68,9 @@ export default function NewSubject() {
       return
     }
 
+    // Filter out empty teachers
+    const filteredTeachers = teachers.filter(t => t.name || t.phone || t.experience)
+
     try {
       const response = await fetch("/api/subjects", {
         method: "POST",
@@ -52,8 +81,10 @@ export default function NewSubject() {
           name,
           description,
           price,
+          currency: currency || undefined,
           sessionMode: modes,
           location: modes.includes("IN_HOUSE") ? location : null,
+          teachers: filteredTeachers,
         }),
       })
 
@@ -94,8 +125,24 @@ export default function NewSubject() {
               <Textarea id="description" name="description" rows={4} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="price">Price (USD)</Label>
-              <Input id="price" name="price" type="number" step="0.01" min="0" required />
+              <Label htmlFor="price">Price</Label>
+              <Input id="price" name="price" type="number" step="0.01" min="0" placeholder="Enter price (optional)" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <select id="currency" name="currency" className="input" value={currency} onChange={e => setCurrency(e.target.value)}>
+                <option value="">Select currency (optional)</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="PKR">PKR</option>
+                <option value="INR">INR</option>
+                <option value="GBP">GBP</option>
+                <option value="AUD">AUD</option>
+                <option value="CAD">CAD</option>
+                <option value="CNY">CNY</option>
+                <option value="JPY">JPY</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label>Session Mode</Label>
@@ -104,7 +151,7 @@ export default function NewSubject() {
                   <Checkbox
                     id="online"
                     checked={sessionModes.ONLINE}
-                    onCheckedChange={(checked) => setSessionModes({ ...sessionModes, ONLINE: checked === true })}
+                    onCheckedChange={(checked: boolean | "indeterminate") => setSessionModes({ ...sessionModes, ONLINE: checked === true })}
                   />
                   <Label htmlFor="online" className="font-normal">
                     Online
@@ -114,7 +161,7 @@ export default function NewSubject() {
                   <Checkbox
                     id="in-house"
                     checked={sessionModes.IN_HOUSE}
-                    onCheckedChange={(checked) => setSessionModes({ ...sessionModes, IN_HOUSE: checked === true })}
+                    onCheckedChange={(checked: boolean | "indeterminate") => setSessionModes({ ...sessionModes, IN_HOUSE: checked === true })}
                   />
                   <Label htmlFor="in-house" className="font-normal">
                     In-House
@@ -128,14 +175,38 @@ export default function NewSubject() {
                 <Input id="location" name="location" defaultValue="Chaklala Scheme 3" required />
               </div>
             )}
+            <div className="space-y-2">
+              <Label>Teachers</Label>
+              {teachers.map((teacher, idx) => (
+                <div key={idx} className="border p-3 rounded mb-2 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Name"
+                      value={teacher.name}
+                      onChange={e => handleTeacherChange(idx, "name", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Phone"
+                      value={teacher.phone}
+                      onChange={e => handleTeacherChange(idx, "phone", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Experience"
+                      value={teacher.experience}
+                      onChange={e => handleTeacherChange(idx, "experience", e.target.value)}
+                    />
+                    {teachers.length > 1 && (
+                      <Button type="button" variant="destructive" onClick={() => removeTeacher(idx)}>-</Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <Button type="button" variant="outline" onClick={addTeacher}>Add Teacher</Button>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => router.push("/admin/subjects")}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Subject"}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push("/admin/subjects")}>Cancel</Button>
+            <Button type="submit" disabled={isLoading}>{isLoading ? "Creating..." : "Create Subject"}</Button>
           </CardFooter>
         </form>
       </Card>

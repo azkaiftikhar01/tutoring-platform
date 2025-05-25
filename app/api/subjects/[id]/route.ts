@@ -2,14 +2,14 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@/lib/auth-server"
 import { prisma } from "@/lib/prisma"
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const subject = await prisma.subject.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
-        schedules: {
-          orderBy: { startTime: "asc" },
-        },
+        schedules: true,
+        teachers: true,
       },
     })
 
@@ -24,7 +24,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const session = await getServerSession()
 
@@ -35,7 +36,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const { name, description, price, sessionMode, location } = await request.json()
 
     const subject = await prisma.subject.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         description,
@@ -52,7 +53,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     const session = await getServerSession()
 
@@ -62,12 +64,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     // Delete all schedules associated with the subject
     await prisma.schedule.deleteMany({
-      where: { subjectId: params.id },
+      where: { subjectId: id },
     })
 
     // Delete the subject
     await prisma.subject.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: "Subject deleted successfully" })
